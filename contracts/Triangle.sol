@@ -2,12 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "erc721a/contracts/ERC721A.sol";
 
-contract Triangle is ERC721A, Ownable {
-	using Strings 	for uint256;
-
-	uint256 private _tokenID;
+contract Triangle is ERC721A, Ownable, ReentrancyGuard {
+	using Strings for uint256;
 
 	uint256 constant MAX_SUPPLY = 20;
 	uint256 constant MINT_PER_ADDRESS = 2;
@@ -16,15 +15,13 @@ contract Triangle is ERC721A, Ownable {
 	string public baseTokenURI;
 	string public baseTokenExtension;
 
+	uint256 private _tokenID;
 	uint256 public price = 0.01 ether;
 
 	bool public paused;
-	bool public revealed;
 
-	bytes32 public merkleRoot;
-
-	mapping(address => uint256) tokensMintedByAddress;
-	mapping(address => bool) whitelistedUsers;
+	mapping(address => uint256) public tokensMintedByAddress;
+	mapping(address => bool) public whitelistedUsers;
 
 	constructor(string memory unrevealedURI, string memory _name, string memory _symbol) ERC721A(_name, _symbol) {
 		setBaseURI(unrevealedURI);
@@ -39,7 +36,7 @@ contract Triangle is ERC721A, Ownable {
 		require(whitelistedUsers[msg.sender], "You're not whitelisted!");
 		require(quantity > 0, "You must mint at least 1 NFT!");
 		require(tokensMintedByAddress [msg.sender] + quantity <= MINT_PER_ADDRESS, "Max tokens per address exceeded!");
-		require((_tokenID + RESERVED_TOKEN + quantity) <= MAX_SUPPLY, "Max public supply exceeded!");
+		require(this.mintedTokens() + quantity <= MAX_SUPPLY, "Max public supply exceeded!");
 		require(msg.value >= price * quantity, "Please send the correct amount of ETH!");
 
 		_tokenID += quantity;
@@ -48,7 +45,7 @@ contract Triangle is ERC721A, Ownable {
 	}
 
 	function gift(address _to, uint256 quantity) external onlyOwner {
-		require((_tokenID + quantity) <= MAX_SUPPLY, "Max public supply exceeded!");
+		require(_tokenID + quantity <= MAX_SUPPLY, "Max public supply exceeded!");
 		require(quantity > 0, "You must mint at least 1 NFT!");
 
 		_tokenID += quantity;
