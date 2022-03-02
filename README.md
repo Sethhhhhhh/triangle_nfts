@@ -1,1 +1,1 @@
-![](./assets/images/green_01.png?raw=true =100x20)
+![](relative/assets/images/green_01.png?raw=true =100x20)
